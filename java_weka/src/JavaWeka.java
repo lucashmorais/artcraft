@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -53,7 +55,77 @@ public class JavaWeka {
 		}
 	}
 	
+	public static File weka_generate_random_relation(String file_name)
+	{
+		File training_file = new File(file_name);
+		Random rnd = new Random();
+		
+		try
+		{
+			FileWriter writer = new FileWriter(training_file);
+			writer.write("@relation art_training_set\n");
+			for (int i = 0; i < 108; i++)
+			{
+				writer.write("@attribute 'd" + i + "' numeric\n");
+			}
+			writer.write("@attribute 'evaluation' { liked, disliked }\n");
+			writer.write("@data\n");
+			
+			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/BASE_DE_DADOS", "root", "password");
+			Statement st = conn.createStatement();
+			
+			ResultSet all_descriptors = st.executeQuery("SELECT * FROM Image_Descriptors");
+			
+			while(all_descriptors.next())
+			{
+				for (int i = 2; i <= 109; i++)
+				{
+					writer.write("" + all_descriptors.getDouble(i) + ",");
+				}
+				
+				if (rnd.nextBoolean())
+				{
+					writer.write("liked\n");
+				}
+				else
+					writer.write("disliked\n");
+			}
+			
+			writer.close();
+		}
+		catch (IOException | SQLException e)
+		{
+			e.printStackTrace();
+		}
+		
+		return training_file;
+	}
 	
+	public static void weka_test_relation()
+	{
+		File f = weka_generate_random_relation("training_file.arff");
+		
+		try
+		{
+			FileReader reader = new FileReader(f);
+			BufferedReader breader = new BufferedReader(reader);
+			Instances training_set = new Instances(breader);
+			
+			training_set.setClassIndex(training_set.numAttributes() - 1);
+			
+			J48 tree = new J48();
+			tree.buildClassifier(training_set);
+			
+			System.out.println(tree.toString());
+			
+			reader.close();
+			breader.close();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
 	
 	public static void weka_test()
 	{
@@ -92,7 +164,7 @@ public class JavaWeka {
 						depth++;
 				}
 				
-				String[] words = linha.split(" +");
+				String[] words = linha.split("[ :]+");
 				
 				
 				int comparator_index = -1;
@@ -155,6 +227,7 @@ public class JavaWeka {
 	
 	public static void main(String[] args) throws Exception{
 		//weka_test();
-		sql_test();
+		//sql_test();
+		weka_test_relation();
 	}
 }
