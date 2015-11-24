@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import com.sun.xml.internal.ws.util.StringUtils;
@@ -16,7 +17,6 @@ import weka.core.Instances;
 import java.sql.*;
 
 public class JavaWeka {
-	
 	public static void sql_test()
 	{
 		final String USER = "root";
@@ -127,6 +127,101 @@ public class JavaWeka {
 		}
 	}
 	
+	public static PredictionInfo getPredictionInfo(String linha)
+	{
+		double hitCount = 0;
+		double missCount = 0;
+		double hitRatio = 0;
+		
+//		System.out.println(linha);		
+		String[] parts = linha.split("[ \ta-zA-Z_():<=>/|]+");
+		
+		int length = parts.length;
+		hitCount = Double.parseDouble(parts[length - 2]);
+		missCount = Double.parseDouble(parts[length - 1]);
+		
+		if (!linha.contains("/"))
+		{
+			hitRatio = 1;
+		}
+		else
+		{
+			hitRatio = hitCount / missCount;
+		}
+		
+//		System.out.println("Hit ratio: " + hitRatio);
+		return new PredictionInfo(hitRatio, hitCount, missCount);
+	}
+	
+	public static ArrayList<CondSet> print_conditions(J48 tree)
+	{		
+		String s = tree.toString();
+		String[] lines = s.split("\\n");
+		ArrayList<CondSet> conditions = new ArrayList<CondSet>();
+		
+		ArrayList<ArrayList<String>> conds = new ArrayList<ArrayList<String>>();
+		for (int i = 0; i < lines.length; i++)
+		{
+			String linha = lines[i];
+			int depth = 0;
+			
+			for (int j = 0; j < linha.length(); j++)
+			{
+				if (linha.charAt(j) == '|')
+					depth++;
+			}
+			
+			String[] words = linha.split("[ :]+");
+			
+			
+			int comparator_index = -1;
+			boolean matched = false;
+			for (int j = 0; j < words.length; j++)
+			{
+				if (words[j].matches("[<>=]+"))
+				{
+					comparator_index = j;
+					matched = true;
+					break;
+				}
+			}
+
+			if (matched)
+			{
+				conds.ensureCapacity(depth + 1);
+				if (conds.size() <= depth)
+					conds.add(new ArrayList<String>());
+				else
+					conds.set(depth, new ArrayList<String>());			
+				
+				if (conds.get(depth).size() < 3)
+				{
+					conds.get(depth).add(0, words[comparator_index - 1]);
+					conds.get(depth).add(1, words[comparator_index    ]);
+					conds.get(depth).add(2, words[comparator_index + 1]);
+				}
+				else
+				{
+					conds.get(depth).set(0, words[comparator_index - 1]);
+					conds.get(depth).set(1, words[comparator_index    ]);
+					conds.get(depth).set(2, words[comparator_index + 1]);				
+				}
+			}
+			
+			if (matched && linha.matches(".*tested_positive.*") || linha.matches(".*liked.*"))
+			{
+				
+//				System.out.println(conds.subList(0, depth + 1));
+				
+				CondSet set = new CondSet(conds.subList(0, depth + 1), getPredictionInfo(linha));
+				System.out.println(set.getQuery());
+				conditions.add(set);
+			}
+		}
+		
+		return conditions;
+	}
+	
 	public static void weka_test()
 	{
 		BufferedReader breader = null;
@@ -142,92 +237,19 @@ public class JavaWeka {
 			Evaluation eval = new Evaluation(train);
 			eval.crossValidateModel(tree, train, 10, new Random(1));
 			
-
-			//System.out.println(eval.toSummaryString("\nResults\n======\n", true));
-			//System.out.println(eval.fMeasure(1)+ " "+ eval.precision(1)+ " " + eval.recall(1));
-			
-			String s = tree.toString();
-			String[] lines = s.split("\\n");
-			
-			
-			System.out.println(s);
-			
-			ArrayList<ArrayList<String>> conds = new ArrayList<ArrayList<String>>();
-			for (int i = 0; i < lines.length; i++)
-			{
-				String linha = lines[i];
-				int depth = 0;
-				
-				for (int j = 0; j < linha.length(); j++)
-				{
-					if (linha.charAt(j) == '|')
-						depth++;
-				}
-				
-				String[] words = linha.split("[ :]+");
-				
-				
-				int comparator_index = -1;
-				boolean matched = false;
-				for (int j = 0; j < words.length; j++)
-				{
-					if (words[j].matches("[<>=]+"))
-					{
-						comparator_index = j;
-						matched = true;
-						break;
-					}
-				}
-				
-
-				if (matched)
-				{
-					conds.ensureCapacity(depth + 1);
-					if (conds.size() <= depth)
-						conds.add(new ArrayList<String>());
-					else
-						conds.set(depth, new ArrayList<String>());			
-					
-					if (conds.get(depth).size() < 3)
-					{
-						conds.get(depth).add(0, words[comparator_index - 1]);
-						conds.get(depth).add(1, words[comparator_index    ]);
-						conds.get(depth).add(2, words[comparator_index + 1]);
-					}
-					else
-					{
-						conds.get(depth).set(0, words[comparator_index - 1]);
-						conds.get(depth).set(1, words[comparator_index    ]);
-						conds.get(depth).set(2, words[comparator_index + 1]);				
-					}
-				}
-				
-				if (matched && linha.matches(".*tested.*"))
-				{
-					System.out.println(conds.subList(0, depth + 1));
-				}
-				
-				
-				//System.out.println("Profundidade: " + depth + "\n\t" + linha);
-				//System.out.println(linha + "\t\t" + linha.matches(".*tested_.*"));
-			}
-			
-			
-			//System.out.println(eval.toSummaryString());
-			//System.out.println(eval.toClassDetailsString());
-		} catch (IOException e) {
+			print_conditions(tree);
+			} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 	
 	public static void main(String[] args) throws Exception{
-		//weka_test();
+		weka_test();
 		//sql_test();
-		weka_test_relation();
+		//weka_test_relation();
 	}
 }
