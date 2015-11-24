@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class CondSet {
+public class CondSet implements Comparable<CondSet> {
 	PredictionInfo info;
 	List<ArrayList<String>> conds;
 	
@@ -36,5 +36,10 @@ public class CondSet {
 		query = query + elementaryCondition(conds.get(size - 1));
 		
 		return query;
+	}
+
+	@Override
+	public int compareTo(CondSet o) {
+		return this.info.compareTo(o.info);
 	}
 }

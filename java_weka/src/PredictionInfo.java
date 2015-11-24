@@ -1,5 +1,5 @@
 
-public class PredictionInfo {
+public class PredictionInfo implements Comparable<PredictionInfo>{
 	double hitRatio;
 	double hitCount;
 	double missCount;
@@ -9,5 +9,15 @@ public class PredictionInfo {
 		hitRatio = newHitRatio;
 		hitCount = newHitCount;
 		missCount = newMissCount;
+	}
+
+	@Override
+	public int compareTo(PredictionInfo o) {
+		if (this.hitRatio > o.hitRatio)
+			return -1;
+		else if (this.hitRatio < o.hitRatio)
+			return 1;
+		else
+			return (int) o.hitCount - (int) this.hitCount;
 	}
 }

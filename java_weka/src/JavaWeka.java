@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -220,7 +221,12 @@ public class JavaWeka {
 		
 		ArrayList<CondSet> conditions = print_conditions(tree);
 		if (conditions.size() > 0)
+		{
+			Collections.sort(conditions);
+//			for (CondSet s: conditions)
+//				System.out.println(s.getQuery());
 			return conditions.get(0).getQuery();
+		}
 		else
 			return "SELECT * FROM Image_Descriptors";
 	}
