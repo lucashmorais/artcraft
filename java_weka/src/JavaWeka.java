@@ -1,9 +1,11 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -13,10 +15,11 @@ import com.sun.xml.internal.ws.util.StringUtils;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
 import weka.core.Instances;
+import weka.gui.BrowserHelper;
 
 import java.sql.*;
 
-public class JavaWeka {
+public class JavaWeka {	
 	public static void sql_test()
 	{
 		final String USER = "root";
@@ -101,39 +104,102 @@ public class JavaWeka {
 		return training_file;
 	}
 	
-	public static void weka_test_relation()
+	public static void appendTest(String file_name)
+	{
+		File training_file = new File(file_name);
+		
+		try {
+			FileWriter writer = new FileWriter(training_file, true);
+			BufferedWriter bwriter = new BufferedWriter(writer);
+			PrintWriter pwriter = new PrintWriter(bwriter);
+			
+			System.out.println("Entrou ");
+			
+			pwriter.println("Teste de append");
+			
+			pwriter.close();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
+	public static void feedWithInfo(boolean like, String imageName)
+	{
+		File training_file = new File("training_file.arff");
+		
+		try
+		{
+			FileWriter writer = new FileWriter(training_file, true);
+			PrintWriter pwriter= new PrintWriter(new BufferedWriter(writer));
+			
+			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/BASE_DE_DADOS", "root", "password");
+			Statement st = conn.createStatement();
+			
+			ResultSet descriptor = st.executeQuery("SELECT * FROM Image_Descriptors WHERE name = \"" + imageName + "\"");
+			
+			while(descriptor.next())
+			{
+				for (int i = 2; i <= 109; i++)
+				{
+					pwriter.write("" + descriptor.getDouble(i) + ",");
+				}
+				
+				if (like)
+				{
+					pwriter.write("liked\n");
+				}
+				else
+					pwriter.write("disliked\n");
+			}
+			
+			pwriter.close();
+		}
+		catch (IOException | SQLException e)
+		{
+			e.printStackTrace();
+		}
+		
+		runTraining();
+	}
+	
+	public static void runTraining()
 	{
 		File f = weka_generate_random_relation("training_file.arff");
+		Instances training_set = null;
+		J48 tree = null;
 		
 		try
 		{
 			FileReader reader = new FileReader(f);
 			BufferedReader breader = new BufferedReader(reader);
-			Instances training_set = new Instances(breader);
 			
+			training_set = new Instances(breader);
+			tree = new J48();
 			training_set.setClassIndex(training_set.numAttributes() - 1);
-			
-			J48 tree = new J48();
 			tree.buildClassifier(training_set);
+
 			
-			System.out.println(tree.toString());
-			
-			reader.close();
 			breader.close();
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
+		
+		ArrayList<CondSet> conditions = print_conditions(tree);
+		CondSet set = conditions.get(0);
+		System.out.println(set.getQuery());
 	}
 	
 	public static PredictionInfo getPredictionInfo(String linha)
-	{
+	{		
 		double hitCount = 0;
 		double missCount = 0;
 		double hitRatio = 0;
 		
-//		System.out.println(linha);		
 		String[] parts = linha.split("[ \ta-zA-Z_():<=>/|]+");
 		
 		int length = parts.length;
@@ -210,11 +276,7 @@ public class JavaWeka {
 			
 			if (matched && linha.matches(".*tested_positive.*") || linha.matches(".*liked.*"))
 			{
-				
-//				System.out.println(conds.subList(0, depth + 1));
-				
 				CondSet set = new CondSet(conds.subList(0, depth + 1), getPredictionInfo(linha));
-				System.out.println(set.getQuery());
 				conditions.add(set);
 			}
 		}
@@ -248,8 +310,10 @@ public class JavaWeka {
 	}
 	
 	public static void main(String[] args) throws Exception{
-		weka_test();
+		//weka_test();
 		//sql_test();
 		//weka_test_relation();
+//		appendTest("training_file.arff");
+		feedWithInfo(true, "00battle.jpg");
 	}
 }

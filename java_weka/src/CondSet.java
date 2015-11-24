@@ -30,11 +30,12 @@ public class CondSet {
 	public String getQuery()
 	{
 		String query = "SELECT name FROM Image_Descriptors WHERE ";
-		for (int i = 0; i < conds.size() - 1; i++)
+		int size = conds.size();
+		for (int i = 0; i < size - 1; i++)
 		{
 			query = query + elementaryCondition(i) + " AND ";
 		}
-		query = query + elementaryCondition(conds.size() - 1);
+		query = query + elementaryCondition(size - 1);
 		
 		return query;
 	}
