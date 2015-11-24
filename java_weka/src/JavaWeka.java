@@ -104,6 +104,35 @@ public class JavaWeka {
 		return training_file;
 	}
 	
+	public static String bootstrap()
+	{
+		File training_file = new File("training_file.arff");
+		String select_string = null;
+		
+		try
+		{
+			FileWriter writer = new FileWriter(training_file);
+			writer.write("@relation art_training_set\n");
+			for (int i = 0; i < 108; i++)
+			{
+				writer.write("@attribute 'd" + i + "' numeric\n");
+			}
+			writer.write("@attribute 'evaluation' { liked, disliked }\n");
+			writer.write("@data\n");
+			
+			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/BASE_DE_DADOS", "root", "password");
+			Statement st = conn.createStatement();
+			
+			writer.close();
+		}
+		catch (IOException | SQLException e)
+		{
+			e.printStackTrace();
+		}
+		
+		return "SELECT name FROM Image_Descriptors";
+	}
+	
 	public static void appendTest(String file_name)
 	{
 		File training_file = new File(file_name);
@@ -126,7 +155,7 @@ public class JavaWeka {
 
 	}
 	
-	public static void feedWithInfo(boolean like, String imageName)
+	public static String feedWithInfo(boolean like, String imageName)
 	{
 		File training_file = new File("training_file.arff");
 		
@@ -138,7 +167,8 @@ public class JavaWeka {
 			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/BASE_DE_DADOS", "root", "password");
 			Statement st = conn.createStatement();
 			
-			ResultSet descriptor = st.executeQuery("SELECT * FROM Image_Descriptors WHERE name = \"" + imageName + "\"");
+			ResultSet descriptor = st.executeQuery("SELECT * FROM Image_Descriptors WHERE name = \"" + imageName + "\";");
+//			System.out.println("SELECT * FROM Image_Descriptors WHERE name = \"" + imageName + "\";");
 			
 			while(descriptor.next())
 			{
@@ -162,12 +192,12 @@ public class JavaWeka {
 			e.printStackTrace();
 		}
 		
-		runTraining();
+		return runTraining();
 	}
 	
-	public static void runTraining()
+	public static String runTraining()
 	{
-		File f = weka_generate_random_relation("training_file.arff");
+		File f = new File("training_file.arff");
 		Instances training_set = null;
 		J48 tree = null;
 		
@@ -181,7 +211,6 @@ public class JavaWeka {
 			training_set.setClassIndex(training_set.numAttributes() - 1);
 			tree.buildClassifier(training_set);
 
-			
 			breader.close();
 		}
 		catch (Exception e)
@@ -190,8 +219,10 @@ public class JavaWeka {
 		}
 		
 		ArrayList<CondSet> conditions = print_conditions(tree);
-		CondSet set = conditions.get(0);
-		System.out.println(set.getQuery());
+		if (conditions.size() > 0)
+			return conditions.get(0).getQuery();
+		else
+			return "SELECT * FROM Image_Descriptors";
 	}
 	
 	public static PredictionInfo getPredictionInfo(String linha)
@@ -229,6 +260,10 @@ public class JavaWeka {
 		for (int i = 0; i < lines.length; i++)
 		{
 			String linha = lines[i];
+//			System.out.println(linha);
+			if (linha.length() == 0 || linha.charAt(0) == ':')
+				continue;
+			
 			int depth = 0;
 			
 			for (int j = 0; j < linha.length(); j++)
@@ -274,9 +309,10 @@ public class JavaWeka {
 				}
 			}
 			
-			if (matched && linha.matches(".*tested_positive.*") || linha.matches(".*liked.*"))
+			if (matched && linha.matches(".*tested_positive.*") || linha.matches(".*[^s]liked.*"))
 			{
-				CondSet set = new CondSet(conds.subList(0, depth + 1), getPredictionInfo(linha));
+
+				CondSet set = new CondSet(new ArrayList<ArrayList<String>>(conds.subList(0, depth + 1)), getPredictionInfo(linha));
 				conditions.add(set);
 			}
 		}
@@ -314,6 +350,11 @@ public class JavaWeka {
 		//sql_test();
 		//weka_test_relation();
 //		appendTest("training_file.arff");
-		feedWithInfo(true, "00battle.jpg");
+		bootstrap();
+		System.out.println(feedWithInfo(true, "00battle.jpg"));
+		System.out.println(feedWithInfo(true, "00acount.jpg"));
+		System.out.println(feedWithInfo(false, "00beaun1.jpg"));
+		System.out.println(feedWithInfo(true, "0calm.jpg"));
+		System.out.println(feedWithInfo(false, "00flock.jpg"));
 	}
 }

@@ -18,10 +18,8 @@ public class CondSet {
 		return conds.toString();
 	}
 	
-	public String elementaryCondition(int index)
-	{
-		ArrayList<String> condition = conds.get(index);
-		
+	public String elementaryCondition(ArrayList<String> condition)
+	{		
 		String s = condition.get(0) + " " + condition.get(1) + " " + condition.get(2);
 		
 		return s;
@@ -33,9 +31,9 @@ public class CondSet {
 		int size = conds.size();
 		for (int i = 0; i < size - 1; i++)
 		{
-			query = query + elementaryCondition(i) + " AND ";
+			query = query + elementaryCondition(conds.get(i)) + " AND ";
 		}
-		query = query + elementaryCondition(size - 1);
+		query = query + elementaryCondition(conds.get(size - 1));
 		
 		return query;
 	}
