@@ -224,7 +224,7 @@ public class JavaWeka {
 		{
 			Collections.sort(conditions);
 //			for (CondSet s: conditions)
-//				System.out.println(s.getQuery());
+//				System.out.println(s.getQuery() + ", " + s.info);
 			return conditions.get(0).getQuery();
 		}
 		else
@@ -240,15 +240,18 @@ public class JavaWeka {
 		String[] parts = linha.split("[ \ta-zA-Z_():<=>/|]+");
 		
 		int length = parts.length;
-		hitCount = Double.parseDouble(parts[length - 2]);
-		missCount = Double.parseDouble(parts[length - 1]);
+
 		
 		if (!linha.contains("/"))
 		{
-			hitRatio = 1;
+			hitRatio = 999;
+			hitCount = Double.parseDouble(parts[length - 1]);
+			missCount = 0;
 		}
 		else
 		{
+			hitCount = Double.parseDouble(parts[length - 2]);
+			missCount = Double.parseDouble(parts[length - 1]);
 			hitRatio = hitCount / missCount;
 		}
 		
@@ -354,8 +357,12 @@ public class JavaWeka {
 	public static void main(String[] args) throws Exception{
 		//weka_test();
 		//sql_test();
-		//weka_test_relation();
+		
+//		weka_generate_random_relation("training_file.arff");
+//		runTraining();
+		
 //		appendTest("training_file.arff");
+		
 		bootstrap();
 		System.out.println(feedWithInfo(true, "00battle.jpg"));
 		System.out.println(feedWithInfo(true, "00acount.jpg"));

@@ -10,6 +10,12 @@ public class PredictionInfo implements Comparable<PredictionInfo>{
 		hitCount = newHitCount;
 		missCount = newMissCount;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "(HR: " + hitRatio + ", HC: " + hitCount + ", MC: " + missCount + ")";
+	}
 
 	@Override
 	public int compareTo(PredictionInfo o) {
